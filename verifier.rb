@@ -54,22 +54,27 @@ def verify_block_num(line, cur_num) {
 	string_num, i = iter_next(line, 0, '|')
 	num 
 	begin 
-		num = Integer(string_num)
+		num = Integer (string_num)
 		if (num == cur_num + 1) {
 			return true, i 
 		}
 		else {
-			puts "Expected #{cur_num + 1}, got #{num}"
+			puts "Expected #{cur_num + 1}, but got #{num}"
 			return false
 		}
-	rescue ArgumentError{
-		puts "Expected #{cur_num + 1}, got invalid block number: #{string_num}"
+	rescue ArgumentError {
+		puts "Expected #{cur_num + 1}, but got invalid block number: #{string_num}"
 		return false
 	}
 }
 
-def verify_prev_hash(line, i, prev_hasg) {
-	
+def verify_prev_hash(line, i, prev_hash) {
+	str_hash, j = iter_next(line, i, '|')
+	if (str_hash == prev_hash) {
+		return true, j
+	}
+	puts "Expected #{prev_hash}, but got #{str_hash}"
+	return false 
 }
 
 def verify_tran (line, i, trans) {
