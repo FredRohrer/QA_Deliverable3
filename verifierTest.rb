@@ -15,5 +15,16 @@ class verifierTest {
 		assert_equal('Invalid file', exc.message) 
 	}
 	
+	def test_verify_pipes {
+		assert (verify_pipes("||||") 
+		assert (!verify_pipes("|||")
+	}
+	
+	def test_hash_char {
+		mem = Hash.new
+		
+		assert_equal (hash_char('|'), 0) 
+	}
+	
 	
 }
