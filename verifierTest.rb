@@ -26,5 +26,9 @@ class verifierTest {
 		assert_equal (hash_char('|'), 0) 
 	}
 	
-	
+	def test_iter_next {
+		s, i = iter_next("012345|789", 0, '|')
+		assert_equal (s, "012345")
+		assert_equal (i, 7)
+	}
 }

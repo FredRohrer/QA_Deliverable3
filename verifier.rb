@@ -22,6 +22,20 @@ def hash_char(char, mem) {
 	return value, mem
 }
 
+def iter_next (line, start, end_char) {
+	i = 0
+	str = ""
+	line = line[start]
+	line.each_char { |c|
+		if (c == end_char) {
+			break 
+		}
+		str = str + c
+		i = i + 1
+	}
+	return str, i + 1
+}
+
 def verify_pipes (line) {
 	pipe_count = 0
 	line.each_char { |c|
@@ -37,20 +51,25 @@ def verify_pipes (line) {
 }
 
 def verify_block_num(line, cur_num) {
-	i = 0
-	string_num = ""
-	line.each_char { |c|
-		if (c == '|') {
-			break 
+	string_num, i = iter_next(line, 0, '|')
+	num 
+	begin 
+		num = Integer(string_num)
+		if (num == cur_num + 1) {
+			return true, i 
 		}
-		string_num = string_num + c
-		i = i + 1
+		else {
+			puts "Expected #{cur_num + 1}, got #{num}"
+			return false
+		}
+	rescue ArgumentError{
+		puts "Expected #{cur_num + 1}, got invalid block number: #{string_num}"
+		return false
 	}
-	
 }
 
 def verify_prev_hash(line, i, prev_hasg) {
-
+	
 }
 
 def verify_tran (line, i, trans) {
