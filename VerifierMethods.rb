@@ -3,7 +3,7 @@
 def getFile (input) 
 	begin 
 	f = File.new(input, 'r')
-	rescue  
+	rescue 
 		raise "Invalid file"
 	end
 	f
@@ -20,22 +20,8 @@ def hash_char(char, mem)
 		mem[ch] = x
 		x
 	}
-	return value, mem
+	return value
 end
-
-#def iter_next (line, start, end_char) 
-#	i = 0
-#	str = ""
-#	line = line[start..-1]
-#	line.each_char { |c|
-#		if (c == end_char) 
-#			break 
-#		end 
-#		str = str + c
-#		i = i + 1
-#	}
-#	return str, i + 1
-#end
 
 def verify_pipes (line) 
 	pipe_count = 0
@@ -56,7 +42,7 @@ def verify_block_num(line, cur_num)
 	#string_num, i = iter_next(line, 0, '|')
 	
 	begin 
-		num = Integer (string_num)
+		num = Integer (line)
 		if (num == cur_num ) 
 			return true
 		else
@@ -64,48 +50,59 @@ def verify_block_num(line, cur_num)
 			return false
 		end
 	rescue ArgumentError 
-		puts "Expected block number to be #{cur_num}, but is invalid block number: #{string_num}"
+		puts "Expected block number to be #{cur_num}, but is invalid block number: #{line}"
 		return false
 	end
 end
 
 def verify_prev_hash(line, prev_hash) 
 	#str_hash, j = iter_next(line, i, '|')
-	if (str_hash == prev_hash) 
+	if (line == prev_hash) 
 		return true
 	end
-	puts "Expected the previous hash to be #{prev_hash}, but got #{str_hash}"
+	puts "Expected the previous hash to be #{prev_hash}, but is #{line}"
 	return false 
 end
 
 def hash_line (line, mem)
 	value = 0
 	line.each_char { |c|
-		temp, mem = hash_char(c)
-		value = (value + temp) % c 
+		temp = hash_char(c, mem)
+		value = (value + temp) % 65536
 	}
-	return value, mem 
+	return value
 end
 
 
 def parse_tr (tr) 
 	parties = tr.split('>')
 	if parties.length != 2
-		puts "Expected name1>name2(x), but have #{tr}"
+		puts "Transaction error: Expected name1>name2(x), but have #{tr}"
 		return false 
 	end
 	
 	recs = parties[1].split('(')
 	
 	unless recs.length == 2 
-		
+		puts "Transaction error: Expected a ( somewhere, but have #{tr}"
+		return false
 	end
 	
 	if recs[1][-1] == ')'
 		recs[1].chop!
+	else
+		puts "Transaction error: Expected a ) somewhere, but have #{tr}"
+		return false
 	end
 	
-	value = Integer(recs[1])
+	
+	begin 
+		value = Integer(recs[1])
+	rescue ArgumentError
+		puts "Transaction error: Expected an int in () but have #{recs[1]}"
+		return false
+	end
+	
 	return parties[0], recs[0], value
 end 
 
@@ -127,27 +124,25 @@ def ver_tr (trans, hist, last)
 	
 	
 	
-	return true, hist
+	return true
 	
 end
 
-def ver_all_trans (line, tr_hist) 
+def verify_all_trans (line, tr_hist) 
 	trans = line.split(':')
 	if trans.length < 1 
 		puts "Expected at least a system transaction but no transactions"
 	end
 	last = false
 	trans.each_with_index { |tr, i|
-		if trans.length == i + 1 last = true
-		ver, tr_hist = ver_tr(tr, tr_hist, last)
-		return false unless ver
-		
-		
-		
+		if trans.length == i + 1 
+			last = true
+		end 
+		return false unless ver_tr(tr, tr_hist, last)
 	}
 	
 	tr_hist.each { |key, value|
-		if value > 0 
+		if value < 0 
 			puts "#{key} ended the block with negative Billcoins"
 			return false
 		end
@@ -156,31 +151,73 @@ def ver_all_trans (line, tr_hist)
 	return true, tr_hist
 end
 
-def verify_time (line, prev_sec, prev_nano) 
+def verify_time (line, prev_time) 
 	s_nums = line.split('.')
-	if s_num.length != 2 
+	prev_sec = prev_time[0]
+	prev_nano = prev_time[1]
+	if s_nums.length != 2 
 		puts "Expected time in format #.#, but is #{line}"
 		return false
 	end	
 	begin
-		sec = Integer(s_num[0])
-		nano = Integer(s_num[1])
+		sec = Integer(s_nums[0])
+		nano = Integer(s_nums[1])
 	rescue ArgumentError
 		puts "Expected time in format #.#, but is #{line}"
 		return false
 	end
 	
-	if sec < prev_sec or (sec == prev_sec and nano > prev_nano) 
-		return true, sec, nano	
+	
+	if sec > prev_sec or (sec == prev_sec and nano > prev_nano) 
+		prev_time[0] = sec
+		prev_time[1] = nano 
+		return true
 	end
 	puts "Expected time to increase but #{line} is not greater than #{prev_sec}.#{prev_nano}"
 	return false
 end
 
-
-def verify_line (balances, prevHash, iter, prev_time, line)
-
+def ver_hash (str_hash, calc_code)
+	str_code = calc_code.to_s(16)
+	unless str_code == str_hash 
+		puts "The hash code: #{str_hash} does not match the calculated code of #{str_code}"
+		return false
+	end
+	return true
 end
 
+def verify_line (tr_hist, mem, block_num, prev_hash, prev_time, line)
+	if verify_pipes(line) 
+		sep = line.split('|')
+		if (verify_block_num(sep[0], block_num) and
+			verify_prev_hash(sep[1], prev_hash) and
+			verify_all_trans(sep[2], tr_hist) and
+			verify_time(sep[3], prev_time))
+			
+			to_be_hashed = sep[0] + '|' + sep[1] + '|' + sep[2] + '|' + sep[3]
+			code = hash_line(to_be_hashed, mem) 
+			if ver_hash(sep[4], code)
+				return true, sep[4] # return the previous hash
+			end
+		end
+	end
+	return false 
+end
+
+def ver_all(tr_hist, block)
+	prev_hash = '0'
+	mem = Hash.new(0)
+	prev_time = [0, 0]
+	
+	block.each_line.with_index { |line, i|
+		line.chomp!
+		ver, prev_hash = verify_line(tr_hist, mem, i, prev_hash, prev_time, line)
+		unless ver
+			puts "Error ^ in line #{i}"
+			return false
+		end
+	}
+	return true
+end
 
 
