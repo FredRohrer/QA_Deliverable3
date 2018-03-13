@@ -1,5 +1,5 @@
 require 'minitest/autorun'
-require_relative 'VerifierMethods.rb'
+require_relative 'verifier.rb'
 
 class VerifierTest < Minitest::Test
 	#File getter tests
