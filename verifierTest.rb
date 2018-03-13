@@ -1,6 +1,8 @@
 require 'minitest/autorun'
-require_relative 'verifier.rb'
-
+begin 
+	require_relative 'verifier.rb'
+rescue RuntimeError => e # the thing throws stuff based on command line args
+end
 class VerifierTest < Minitest::Test
 	#File getter tests
 	def test_get_ok_File 

@@ -225,12 +225,12 @@ def ver_all(tr_hist, block)
 	return true
 end
 
-
+# main method
 
 Flamegraph.generate('verifier.html') do
 
 	unless ARGV.length == 1
-		abort "Invalid command line argument"
+		raise "Invalid command line argument"
 	end
 
 	f = getFile(ARGV[0]) 
